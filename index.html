@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>狼人殺法官助手 v6.6</title>
+    <style>
+        /* 視覺風格保持 v4.1 高飽和度，底部有 iPhone 防擋緩衝區 */
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #1a1a1a; color: #ddd; padding: 10px; padding-bottom: 200px; max-width: 700px; margin: 0 auto; }
+        h2 { text-align: center; color: #e74c3c; margin: 5px 0; letter-spacing: 2px; font-size: 1.4em; }
+        
+        .mode-switch { text-align: center; margin: 10px 0; background: #333; padding: 8px; border-radius: 8px; border: 1px solid #555; }
+        .radio-label { margin: 0 10px; cursor: pointer; font-weight: bold; color: #ecf0f1; }
+        input[type="radio"] { transform: scale(1.2); margin-right: 5px; }
+
+        .dashboard { display: flex; justify-content: space-between; background: #2c3e50; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
+        .count-box { text-align: center; width: 30%; }
+        .count-number { font-size: 1.4em; font-weight: bold; } 
+        .c-wolf { color: #e74c3c; } .c-god { color: #f1c40f; } .c-villager { color: #2ecc71; } 
+        
+        .win-banner { display: none; background: #c0392b; color: white; text-align: center; padding: 10px; font-size: 1.5em; font-weight: bold; border-radius: 8px; margin-bottom: 10px; animation: pop 0.5s; border: 2px solid #e74c3c; }
+
+        .section { background: #34495e; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #7f8c8d; }
+        .sec-wolf { border-left-color: #c0392b; }
+        .sec-day { border-left-color: #e67e22; }
+        .section-header { font-weight: bold; margin-bottom: 5px; color: #ecf0f1; display: flex; justify-content: space-between; font-size: 0.95em; }
+
+        select, input[type="text"], input[type="number"] { padding: 6px; margin: 3px 0; background: #2c3e50; color: white; border: 1px solid #7f8c8d; border-radius: 4px; width: 100%; box-sizing: border-box; font-size: 14px; }
+        .input-error { border: 2px solid #e74c3c !important; background-color: #4a2c2c !important; }
+        
+        input:disabled, .witch-used { background-color: #555 !important; color: #aaa !important; cursor: not-allowed; border-color: #555 !important; }
+
+        button { border: none; padding: 10px; border-radius: 4px; cursor: pointer; color: white; width: 100%; margin-top: 5px; font-size: 14px; font-weight: bold; }
+        .btn-add { background: #2980b9; width: auto; padding: 6px 12px; }
+        .btn-calc { background: #c0392b; font-size: 1.1em; }
+        .btn-day { background: #d35400; }
+        .btn-undo { background: #7f8c8d; width: 100%; margin: 10px 0; padding: 12px; font-size: 1.1em; border: 1px solid #95a5a6; }
+        
+        .role-item { display: flex; align-items: center; justify-content: space-between; padding: 6px; background: #2c3e50; margin-bottom: 4px; border-radius: 3px; border-left: 4px solid #555; }
+        .type-wolf { border-left-color: #e74c3c; }
+        .type-god { border-left-color: #f1c40f; }
+        .type-villager { border-left-color: #2ecc71; }
+        .dead { opacity: 0.5; text-decoration: line-through; background: #222; }
+        
+        .role-num { width: 50px !important; text-align: center; background: #ecf0f1; color: #2c3e50; font-weight: bold; margin: 0 5px; font-size: 16px; padding: 4px !important; border: none; flex: none; }
+        
+        .badge { font-size: 0.7em; padding: 1px 3px; border-radius: 3px; margin-left: 3px; }
+        .b-ghoul { background: #8e44ad; } .b-beauty { background: #fd79a8; color: #2d3436; } .b-bear { background: #d35400; } .b-idiot { background: #95a5a6; color: #2c3e50; }
+
+        .night-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .night-group label { font-size: 0.85em; color: #bdc3c7; }
+        
+        .seer-result { font-size: 0.9em; margin-left: 5px; font-weight: bold; }
+        .res-good { color: #2ecc71; } .res-bad { color: #e74c3c; }
+
+        .witch-check-container { display: flex; align-items: center; background: #2c3e50; border: 1px solid #7f8c8d; border-radius: 4px; padding: 6px; height: 32px; box-sizing: border-box; margin: 3px 0;}
+        input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; cursor: pointer; }
+        
+        #log-area { background: #000; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; border: 1px solid #444; line-height: 1.6; white-space: pre-wrap; font-size: 13px; color: #eee; }
+        
+        /* Log Colors */
+        .log-header { color: #3498db; font-weight: bold; margin-top: 10px; border-bottom: 1px dashed #333; padding-bottom:3px; display:block; }
+        .log-action { color: #bdc3c7; } 
+        .log-kill { color: #e74c3c; font-weight: bold; } 
+        .log-poison { color: #2ecc71; font-weight: bold; }
+        .log-save { color: #2ecc71; } 
+        .log-guard { color: #f1c40f; } 
+        .log-info { color: #3498db; }
+        .log-idiot { color: #f1c40f; font-weight: bold; border: 1px solid #f1c40f; padding: 2px 5px; border-radius: 3px; }
+        .log-bear-yes { color: #e74c3c; font-weight: bold; background: #2c3e50; padding: 3px 6px; border-radius: 4px; border: 1px solid #c0392b; display: inline-block; margin-top: 5px;}
+        .log-bear-no { color: #2ecc71; font-weight: bold; background: #2c3e50; padding: 3px 6px; border-radius: 4px; border: 1px solid #27ae60; display: inline-block; margin-top: 5px;}
+        .log-hunter-yes { color: #2ecc71; font-weight: bold; background: #2c3e50; padding: 2px 5px; border-radius: 3px;}
+        .log-hunter-no { color: #e74c3c; font-weight: bold; background: #2c3e50; padding: 2px 5px; border-radius: 3px; text-decoration: line-through;}
+        .log-immune { color: #55efc4; font-weight: bold; }
+        .log-win { color: #f1c40f; font-weight: bold; font-size: 1.1em; border: 2px solid #f1c40f; padding: 5px; text-align: center; margin-top: 5px; }
+        .log-tie { color: #ecf0f1; font-style: italic; background: #7f8c8d; padding: 2px 5px; border-radius: 3px; }
+
+        @keyframes pop { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <h2>🐺 狼人殺法官 v6.6</h2>
+
+    <div id="win-banner" class="win-banner"></div>
+
+    <div class="dashboard">
+        <div class="count-box"><div class="c-wolf">狼人</div><div id="cnt-wolf" class="count-number">0</div></div>
+        <div class="count-box"><div class="c-god">神職</div><div id="cnt-god" class="count-number">0</div></div>
+        <div class="count-box"><div class="c-villager">平民</div><div id="cnt-villager" class="count-number">0</div></div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">1. 角色配置 (填完號碼後自動補齊平民)</div>
+        <div style="display: flex; gap: 5px;">
+            <select id="roleSelect">
+                <optgroup label="🐺 狼人陣營">
+                    <option value="狼人|wolf">狼人</option>
+                    <option value="狼王|wolf">狼王</option>
+                    <option value="白狼王|wolf">白狼王</option>
+                    <option value="惡靈騎士|wolf">惡靈騎士</option>
+                    <option value="隱狼|wolf">隱狼</option>
+                    <option value="狼美人|wolf">狼美人</option>
+                </optgroup>
+                <optgroup label="🔮 神職陣營">
+                    <option value="預言家|god">預言家</option>
+                    <option value="女巫|god">女巫</option>
+                    <option value="獵人|god">獵人</option>
+                    <option value="守衛|god">守衛</option>
+                    <option value="騎士|god">騎士</option>
+                    <option value="馴熊師|god">馴熊師</option>
+                    <option value="白癡|god">白癡</option>
+                </optgroup>
+                <optgroup label="👱 平民陣營">
+                    <option value="平民|villager">平民</option>
+                    <option value="老流氓|villager">老流氓</option>
+                </optgroup>
+            </select>
+            <button class="btn-add" onclick="addRole()">新增</button>
+        </div>
+        <div id="role-list" style="margin-top: 5px;"></div>
+    </div>
+
+    <div class="mode-switch">
+        <span style="color: #aaa; margin-right: 5px;">勝利條件:</span>
+        <label class="radio-label"><input type="radio" name="winMode" value="side" checked onchange="checkWin()">屠邊</label>
+        <label class="radio-label"><input type="radio" name="winMode" value="city" onchange="checkWin()">屠城</label>
+    </div>
+
+    <div class="section sec-wolf">
+        <div class="section-header">🌙 夜晚行動 (按順序結算)</div>
+        <div class="night-grid">
+            <div class="night-group">
+                <label>🐺 狼刀 (連刀警告):</label>
+                <input type="number" id="n-wolf" placeholder="#" oninput="checkWolfRule(this)">
+            </div>
+            <div class="night-group">
+                <label>🔮 預驗:</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="number" id="n-seer" placeholder="#" style="flex:1;" oninput="updateSeerResult(this)">
+                    <span id="seer-res-text" class="seer-result"></span>
+                </div>
+            </div>
+            <div class="night-group">
+                <label>🧪 毒 (綠色毒藥):</label>
+                <input type="number" id="n-poison" placeholder="#">
+            </div>
+            <div class="night-group">
+                <label>💊 救 (勾選自動救狼刀位):</label>
+                <div class="witch-check-container" id="witch-save-box">
+                    <input type="checkbox" id="n-save-check">
+                    <span style="font-size: 0.9em;">使用解藥</span>
+                </div>
+            </div>
+            <div class="night-group">
+                <label>🛡️ 守 (連守警告):</label>
+                <input type="number" id="n-guard" placeholder="#" oninput="checkGuardRule(this)">
+            </div>
+            <div class="night-group">
+                <label>💋 連:</label>
+                <input type="number" id="n-beauty" placeholder="#">
+            </div>
+        </div>
+        <button class="btn-calc" onclick="resolveNight()">🌕 天亮結算</button>
+    </div>
+
+    <div class="section sec-day">
+        <div class="section-header">☀️ 白天操作 (放逐填0為平票)</div>
+        <div style="display: flex; gap: 5px;">
+            <select id="day-action" style="flex: 1;">
+                <option value="放逐">🗳️ 放逐</option>
+                <option value="獵人夜槍">🔫 獵人開槍 (夜亡帶人)</option>
+                <option value="獵人日槍">🔫 獵人開槍 (日亡/被投)</option>
+                <option value="狼王開槍">🐺 狼王開槍</option>
+                <option value="決鬥">⚔️ 騎士決鬥</option>
+                <option value="狼人自爆">💥 狼人自爆</option>
+            </select>
+            <input type="number" id="day-target" placeholder="#" style="width: 50px;">
+            <button class="btn-day" style="width: auto;" onclick="dayAction()">執行</button>
+        </div>
+    </div>
+
+    <button class="btn-undo" onclick="undoAction()">↩️ 上一步 (撤銷剛才的操作)</button>
+
+    <div id="log-area"><span style="color:#7f8c8d;">等待遊戲開始...</span></div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button onclick="resetKeepConfig()" style="background: #2980b9; flex: 2;">保留配置重新遊戲</button>
+        <button onclick="if(confirm('確定要完全清空所有內容嗎？')) location.reload();" style="background: #555; flex: 1;">完全重置</button>
+    </div>
+
+    <script>
+        let roles = [];
+        let beautyLink = null;
+        let nightCount = 1;
+        let pendingNightGun = false;
+        
+        let lastWolfKill = null;
+        let lastGuardTarget = null;
+        let witchSaveUsed = false;
+        let witchPoisonUsed = false;
+
+        let historyStack = [];
+
+        function saveState() {
+            const state = {
+                roles: JSON.parse(JSON.stringify(roles)),
+                beautyLink, nightCount, pendingNightGun,
+                lastWolfKill, lastGuardTarget, witchSaveUsed, witchPoisonUsed,
+                logHTML: document.getElementById("log-area").innerHTML,
+                winBannerDisplay: document.getElementById("win-banner").style.display,
+                winBannerText: document.getElementById("win-banner").innerText
+            };
+            historyStack.push(state);
+            if (historyStack.length > 20) historyStack.shift();
+        }
+
+        function undoAction() {
+            if (historyStack.length === 0) return alert("沒有上一步紀錄！");
+            if (!confirm("確定要回到上一步嗎？")) return;
+
+            const state = historyStack.pop();
+            
+            roles = state.roles;
+            beautyLink = state.beautyLink;
+            nightCount = state.nightCount;
+            pendingNightGun = state.pendingNightGun;
+            lastWolfKill = state.lastWolfKill;
+            lastGuardTarget = state.lastGuardTarget;
+            witchSaveUsed = state.witchSaveUsed;
+            witchPoisonUsed = state.witchPoisonUsed;
+
+            document.getElementById("log-area").innerHTML = state.logHTML;
+            const banner = document.getElementById("win-banner");
+            banner.style.display = state.winBannerDisplay;
+            banner.innerText = state.winBannerText;
+            
+            updateWitchUI();
+            render();
+            updateStats();
+            
+            document.querySelectorAll('.night-grid input, #day-target').forEach(i => i.value = '');
+            document.getElementById("n-save-check").checked = false;
+            document.getElementById("seer-res-text").innerText = "";
+        }
+
+        function addRole() {
+            const val = document.getElementById("roleSelect").value.split('|');
+            const name = val[0];
+            const type = val[1];
+            roles.push({
+                name: name, type: type, number: '', alive: true,
+                isGhoul: name === '惡靈騎士', reboundUsed: false,
+                isHidden: name === '隱狼', isRogue: name === '老流氓',
+                isBeauty: name === '狼美人', isHunter: (name === '獵人' || name === '狼王'),
+                isBear: name === '馴熊師', isIdiot: name === '白癡', isWWK: name === '白狼王'
+            });
+            sortRoles(); render(); updateStats();
+        }
+
+        function sortRoles() {
+            const order = { 'wolf': 1, 'god': 2, 'villager': 3 };
+            roles.sort((a, b) => order[a.type] - order[b.type]);
+        }
+
+        function render() {
+            const list = document.getElementById("role-list");
+            list.innerHTML = "";
+            let hasAliveWWK = false;
+
+            roles.forEach((r, idx) => {
+                const div = document.createElement("div");
+                div.className = `role-item type-${r.type} ${r.alive ? '' : 'dead'}`;
+                let tags = "";
+                if (r.isGhoul) tags += `<span class="badge b-ghoul">惡靈</span>`;
+                if (r.isBeauty) tags += `<span class="badge b-beauty">狼美</span>`;
+                if (r.isBear) tags += `<span class="badge b-bear">熊</span>`;
+                if (r.isIdiot) tags += `<span class="badge b-idiot">白癡</span>`;
+
+                if (r.isWWK && r.alive) hasAliveWWK = true;
+
+                div.innerHTML = `
+                    <div style="flex:1">
+                        <span style="font-weight:bold">${r.name}</span>
+                        ${tags}
+                    </div>
+                    <input type="number" class="role-num" placeholder="#" value="${r.number}" 
+                        onchange="validateAndAutoFill(${idx}, this.value)">
+                    <button style="width:auto; padding:5px 10px; background:${r.alive?'#2ecc71':'#e74c3c'}" 
+                        onclick="toggleLife(${idx})">${r.alive?'存':'亡'}</button>
+                    <button style="width:auto; background:none; padding:0 5px;" onclick="delRole(${idx})">✕</button>
+                `;
+                list.appendChild(div);
+            });
+            updateDayOptions(hasAliveWWK);
+        }
+
+        function validateAndAutoFill(idx, val) {
+            const input = event.target;
+            val = parseInt(val);
+            const total = roles.length;
+
+            document.querySelectorAll('.role-num').forEach(el => el.classList.remove('input-error'));
+
+            if (val && (val < 1 || val > total)) {
+                alert(`號碼必須在 1 到 ${total} 之間！`);
+                input.value = "";
+                roles[idx].number = "";
+                return;
+            }
+
+            let duplicate = false;
+            roles.forEach((r, i) => {
+                if (i !== idx && r.number == val && val) {
+                    duplicate = true;
+                }
+            });
+
+            if (duplicate) {
+                alert(`⚠️ 號碼 ${val} 重複了！`);
+                input.classList.add('input-error'); 
+                input.value = "";
+                roles[idx].number = "";
+                return;
+            }
+
+            roles[idx].number = val; 
+
+            const specialRoles = roles.filter(r => r.name !== '平民');
+            const villagerRoles = roles.filter(r => r.name === '平民');
+            const allSpecialFilled = specialRoles.every(r => r.number !== '' && r.number > 0);
+            
+            if (allSpecialFilled && villagerRoles.length > 0) {
+                const usedNums = roles.map(r => parseInt(r.number)).filter(n => n);
+                let availableNums = [];
+                for(let i=1; i<=total; i++) {
+                    if (!usedNums.includes(i)) availableNums.push(i);
+                }
+
+                let fillIndex = 0;
+                roles.forEach((r) => {
+                    if (r.name === '平民' && (r.number === '' || !r.number)) {
+                        if (availableNums[fillIndex]) {
+                            r.number = availableNums[fillIndex];
+                            fillIndex++;
+                        }
+                    }
+                });
+                if (fillIndex > 0) render(); 
+            }
+            checkWin(); 
+        }
+
+        function updateSeerResult(input) {
+            const num = input.value;
+            const span = document.getElementById('seer-res-text');
+            span.innerText = "";
+            if (!num) return;
+
+            const target = roles.find(r => r.number == num);
+            if (!target) {
+                span.innerText = "查無此人";
+                span.className = "seer-result";
+                return;
+            }
+
+            if (target.type === 'wolf' && !target.isHidden) {
+                span.innerText = "🔴 狼人";
+                span.className = "seer-result res-bad";
+            } else {
+                span.innerText = "🟢 好人";
+                span.className = "seer-result res-good";
+            }
+        }
+
+        function checkWolfRule(input) {
+            const val = input.value;
+            input.classList.remove('input-error');
+            if (val && val == lastWolfKill && nightCount > 1) {
+                alert("⚠️ 違反規則：狼人不可連續兩晚刀同一人！");
+                input.classList.add('input-error');
+            }
+        }
+
+        function checkGuardRule(input) {
+            const val = input.value;
+            input.classList.remove('input-error');
+            if (val && val == lastGuardTarget && nightCount > 1) {
+                alert("⚠️ 違反規則：守衛不可連續兩晚守同一人！");
+                input.classList.add('input-error');
+            }
+        }
+
+        function updateWitchUI() {
+            const box = document.getElementById("witch-save-box");
+            const check = document.getElementById("n-save-check");
+            if (witchSaveUsed) {
+                box.classList.add("witch-used");
+                check.disabled = true;
+                check.checked = true;
+            } else {
+                box.classList.remove("witch-used");
+                check.disabled = false;
+                check.checked = false;
+            }
+
+            const poisonInput = document.getElementById("n-poison");
+            if (witchPoisonUsed) {
+                poisonInput.disabled = true;
+                poisonInput.placeholder = "已用";
+                poisonInput.value = ""; 
+                poisonInput.classList.add("witch-used");
+            } else {
+                poisonInput.disabled = false;
+                poisonInput.placeholder = "#";
+                poisonInput.classList.remove("witch-used");
+            }
+        }
+
+        function updateDayOptions(hasAliveWWK) {
+            const select = document.getElementById("day-action");
+            const wwkOptionValue = "白狼王自爆";
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === wwkOptionValue) exists = true;
+            }
+            if (hasAliveWWK && !exists) {
+                const opt = document.createElement("option");
+                opt.value = wwkOptionValue;
+                opt.text = "💥 白狼王自爆帶人";
+                opt.style.color = "#e74c3c";
+                opt.style.fontWeight = "bold";
+                select.add(opt);
+            } else if (!hasAliveWWK && exists) {
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === wwkOptionValue) select.remove(i);
+                }
+            }
+        }
+
+        function toggleLife(idx) {
+            roles[idx].alive = !roles[idx].alive;
+            render(); updateStats(); checkWin();
+        }
+        function delRole(idx) { roles.splice(idx, 1); render(); updateStats(); }
+
+        function updateStats() {
+            let w=0, g=0, v=0;
+            roles.forEach(r => {
+                if (r.alive) {
+                    if (r.type === 'wolf') w++;
+                    if (r.type === 'god') g++;
+                    if (r.type === 'villager') v++;
+                }
+            });
+            document.getElementById("cnt-wolf").innerText = w;
+            document.getElementById("cnt-god").innerText = g;
+            document.getElementById("cnt-villager").innerText = v;
+            return { w, g, v };
+        }
+
+        function checkWin() {
+            const allAssigned = roles.length > 0 && roles.every(r => r.number !== "" && r.number !== null && r.number !== undefined);
+            const banner = document.getElementById("win-banner");
+            
+            if (!allAssigned) {
+                banner.style.display = "none";
+                return;
+            }
+
+            const counts = updateStats();
+            const mode = document.querySelector('input[name="winMode"]:checked').value;
+            
+            // 1. 好人勝利
+            if (counts.w === 0 && roles.length > 0) {
+                banner.innerText = "🏆 好人陣營 獲勝！";
+                banner.style.display = "block";
+                log("🏆 遊戲結束：好人陣營獲勝 (狼人全滅)", 'log-win');
+                return;
+            }
+
+            let wolfWin = false;
+            let winReason = "";
+            const goodCount = counts.g + counts.v;
+
+            // 2. 狼人綁票判定 (Wolf >= Good)
+            if (counts.w >= goodCount && goodCount > 0) {
+                if (pendingNightGun) {
+                    log("⚠️ 狼人數量已達標，但需等待獵人夜槍...", 'log-info');
+                    banner.style.display = "none";
+                    return; 
+                }
+                wolfWin = true;
+                winReason = "狼人綁票 (狼 >= 好人)";
+            }
+            // 3. 屠邊邏輯
+            else if (mode === 'side') {
+                if (counts.g === 0) { wolfWin = true; winReason = "屠邊 (神職全滅)"; }
+                else if (counts.v === 0) { wolfWin = true; winReason = "屠邊 (平民全滅)"; }
+                
+                // --- 修正：屠邊局雪崩判定 (Wolf + 1 == Good) ---
+                else if (counts.w + 1 === goodCount) {
+                    // --- 例外：1狼1神1民 (1+1+1局)，強制繼續 ---
+                    if (counts.w === 1 && counts.g === 1 && counts.v === 1) {
+                        banner.style.display = "none";
+                        return; // 遊戲繼續
+                    }
+
+                    // 檢查防禦與反擊角色
+                    const guard = roles.find(r => r.name === '守衛' && r.alive);
+                    const witch = roles.find(r => r.name === '女巫' && r.alive);
+                    const rogue = roles.find(r => r.name === '老流氓' && r.alive);
+                    const hunter = roles.find(r => r.name === '獵人' && r.alive);
+                    
+                    let canDefend = false;
+                    let canCounter = false;
+
+                    if (guard) canDefend = true;
+                    if (witch && !witchSaveUsed) canDefend = true;
+                    if (rogue) canDefend = true;
+
+                    // 獵人存活且死後不會導致屠邊達成 -> 視為可反擊
+                    if (hunter) {
+                        if (hunter.type === 'god' && counts.g > 1) canCounter = true;
+                        else if (hunter.type === 'villager' && counts.v > 1) canCounter = true;
+                    }
+
+                    if (!canDefend && !canCounter) {
+                         if (pendingNightGun) { 
+                             log("⚠️ 達成雪崩條件，但需等待獵人夜槍...", 'log-info');
+                             banner.style.display = "none";
+                             return; 
+                         }
+                         wolfWin = true;
+                         winReason = "雪崩判定 (狼+1=好人，無防禦/反擊手段)";
+                    }
+                }
+            } 
+            // 4. 屠城邏輯 (Good=0)
+            else {
+                if (goodCount === 0) { wolfWin = true; winReason = "屠城 (好人全滅)"; }
+            }
+
+            if (wolfWin) {
+                if (pendingNightGun) {
+                    log(`⚠️ 達成${winReason}條件，但需等待獵人夜槍...`, 'log-info');
+                    banner.style.display = "none";
+                    return;
+                }
+                banner.innerText = "🏆 狼人陣營 獲勝！";
+                banner.style.display = "block";
+                log(`🏆 遊戲結束：狼人陣營獲勝 (${winReason})`, 'log-win');
+            } else {
+                banner.style.display = "none";
+            }
+        }
+
+        function resolveNight() {
+            saveState();
+            pendingNightGun = false; 
+
+            const inputs = {
+                wolf: document.getElementById("n-wolf").value,
+                seer: document.getElementById("n-seer").value,
+                poison: document.getElementById("n-poison").value,
+                useSave: document.getElementById("n-save-check").checked, 
+                guard: document.getElementById("n-guard").value,
+                beauty: document.getElementById("n-beauty").value
+            };
+
+            let saveTarget = "";
+            if (inputs.useSave && !witchSaveUsed) {
+                if (inputs.wolf && inputs.wolf !== '0') {
+                    saveTarget = inputs.wolf; 
+                    witchSaveUsed = true; 
+                    updateWitchUI(); 
+                } else {
+                    alert("⚠️ 今晚狼人空刀，女巫無法使用解藥 (或無需使用)！");
+                    document.getElementById("n-save-check").checked = false;
+                    return; 
+                }
+            }
+
+            if (inputs.poison) {
+                witchPoisonUsed = true;
+                updateWitchUI();
+            }
+
+            lastWolfKill = inputs.wolf;
+            lastGuardTarget = inputs.guard;
+
+            log(`\n=== 第 ${nightCount} 夜結算 ===`, 'log-header');
+            
+            if(inputs.wolf && inputs.wolf !== '0') log(`🐺 狼刀 -> ${inputs.wolf}號`, 'log-kill');
+            else log(`🐺 狼人空刀`, 'log-action');
+            if(inputs.guard) log(`🛡️ 守 -> ${inputs.guard}號`, 'log-guard');
+
+            let seerObj = roles.find(r => r.name === '預言家' && r.alive);
+            if(inputs.seer) {
+                const target = findRole(inputs.seer);
+                if(target) {
+                    let res = (target.type === 'wolf' && !target.isHidden) ? "狼人" : "好人";
+                    log(`🔮 驗 ${inputs.seer}號 -> ${res}`, 'log-info');
+                }
+            }
+            if(saveTarget) log(`💊 救 -> ${saveTarget}號`, 'log-save');
+            if(inputs.poison) log(`🧪 毒 -> ${inputs.poison}號`, 'log-poison');
+            if(inputs.beauty) {
+                log(`💋 連 -> ${inputs.beauty}號`, 'log-action');
+                beautyLink = inputs.beauty;
+            }
+
+            let deadReasons = {}; 
+
+            // A. 預言家
+            if (inputs.seer && seerObj) {
+                const target = findRole(inputs.seer);
+                if (target && target.isGhoul && !target.reboundUsed) {
+                    log(`⚠️ [邏輯] 預言家驗惡靈 -> 反傷觸發`, 'log-kill');
+                    deadReasons[seerObj.number] = 'ghoul_rebound';
+                    target.reboundUsed = true; 
+                }
+            }
+
+            // B. 女巫毒
+            if (inputs.poison) {
+                const t = findRole(inputs.poison);
+                const witch = roles.find(r => r.name === '女巫' && r.alive);
+                
+                if (t && t.isGhoul) {
+                    if (!t.reboundUsed && witch) {
+                        log(`⚠️ [邏輯] 女巫毒惡靈(反傷在) -> 反傷觸發`, 'log-kill');
+                        deadReasons[witch.number] = 'ghoul_rebound';
+                        t.reboundUsed = true;
+                        log(`🛡️ 惡靈免疫毒`, 'log-immune');
+                    } else {
+                        log(`🛡️ 惡靈免疫毒 (反傷已消耗)`, 'log-immune');
+                    }
+                } else if (t && t.isRogue) {
+                     log(`🛡️ 老流氓免疫毒`, 'log-immune');
+                } else if (t) {
+                    deadReasons[inputs.poison] = 'poison';
+                }
+            }
+
+            // C. 狼刀
+            if (inputs.wolf && inputs.wolf !== '0') {
+                const t = findRole(inputs.wolf);
+                const isSaved = (inputs.wolf === saveTarget);
+                const isGuarded = (inputs.wolf === inputs.guard);
+                
+                if (t) {
+                    if (isSaved && isGuarded) {
+                        deadReasons[inputs.wolf] = 'milk_kill'; 
+                    } else if (!isSaved && !isGuarded) {
+                        if (t.isGhoul) log(`😈 惡靈免疫狼刀`, 'log-immune');
+                        else deadReasons[inputs.wolf] = 'wolf';
+                    }
+                }
+            }
+
+            let finalDead = Object.keys(deadReasons);
+            const beauty = roles.find(r => r.isBeauty && r.alive);
+            if (beauty && finalDead.includes(beauty.number) && beautyLink) {
+                 deadReasons[beautyLink] = 'beauty_link';
+                 finalDead.push(beautyLink);
+            }
+
+            finalDead = [...new Set(finalDead)];
+
+            if (finalDead.length === 0) {
+                log(`🌕 天亮：平安夜`, 'log-info');
+            } else {
+                log(`💀 天亮：${finalDead.join(', ')}號 倒牌`, 'log-kill');
+                finalDead.forEach(num => {
+                    const r = findRole(num);
+                    if (r) {
+                        r.alive = false;
+                        const reason = deadReasons[num];
+                        if (r.isHunter && (reason === 'wolf' || reason === 'milk_kill' || reason === 'ghoul_rebound')) {
+                            pendingNightGun = true; 
+                        }
+                        checkHunterSkill(r, reason); 
+                    }
+                });
+            }
+
+            checkBearGrowl(finalDead); 
+
+            document.querySelectorAll('.night-grid input[type="number"]').forEach(i => {
+                i.value = '';
+                i.classList.remove('input-error');
+            });
+            document.getElementById("seer-res-text").innerText = "";
+            document.getElementById("n-save-check").checked = false; 
+
+            nightCount++;
+            render(); updateStats(); checkWin();
+        }
+
+        function checkBearGrowl(finalDeadNumbers) {
+            const bear = roles.find(r => r.isBear && r.alive);
+            if (!bear) return; 
+
+            const alivePlayers = roles.filter(r => r.alive).sort((a,b) => a.number - b.number);
+            if (alivePlayers.length < 2) return; 
+
+            const bearIndex = alivePlayers.findIndex(r => r.number === bear.number);
+            const leftIndex = (bearIndex - 1 + alivePlayers.length) % alivePlayers.length;
+            const rightIndex = (bearIndex + 1) % alivePlayers.length;
+            
+            const leftPlayer = alivePlayers[leftIndex];
+            const rightPlayer = alivePlayers[rightIndex];
+
+            const isLeftWolf = (leftPlayer.type === 'wolf' && !leftPlayer.isHidden);
+            const isRightWolf = (rightPlayer.type === 'wolf' && !rightPlayer.isHidden);
+
+            if (isLeftWolf || isRightWolf) {
+                log(`🐻 馴熊師 -> 咆哮！`, 'log-bear-yes');
+            } else {
+                log(`🐻 馴熊師 -> 沒咆哮`, 'log-bear-no');
+            }
+        }
+
+        function dayAction() {
+            saveState();
+
+            const action = document.getElementById("day-action").value;
+            const targetNum = document.getElementById("day-target").value;
+            
+            if (action === '放逐' && targetNum == 0) {
+                log(`\n⚖️ 白天: 投票平票 -> 無人被放逐`, 'log-tie');
+                document.getElementById("day-target").value = "";
+                return; 
+            }
+
+            if (!targetNum) return alert("請輸入號碼 (平票請輸0)");
+            const target = findRole(targetNum);
+            if (!target) return alert("找不到此號碼");
+
+            if (action === '白狼王自爆') {
+                const wwk = roles.find(r => r.isWWK && r.alive);
+                if (!wwk) return alert("錯誤：找不到存活的白狼王");
+                if (confirm(`💥 確認白狼王(${wwk.number}號) 自爆並帶走 ${targetNum}號嗎？`)) {
+                    log(`\n☀️ 白天: 白狼王(${wwk.number}號) 自爆 -> 帶走 ${targetNum}號`, 'log-kill');
+                    wwk.alive = false;
+                    target.alive = false;
+                    checkHunterSkill(target, 'wwk_boom'); 
+                }
+            } 
+            else if (action === '獵人夜槍') {
+                log(`\n☀️ 白天: ${action} -> ${targetNum}號`, 'log-action');
+                if (confirm(`${targetNum}號 被獵人夜槍帶走，確定嗎？`)) {
+                    if (target.isGhoul) {
+                        log(`🛡️ 獵人夜槍射擊惡靈騎士 -> 惡靈免疫 (夜間傷害無效)`, 'log-immune');
+                        alert("惡靈騎士免疫夜間傷害！");
+                        pendingNightGun = false;
+                        checkWin(); 
+                        return; 
+                    }
+                    target.alive = false;
+                    pendingNightGun = false; 
+                    checkHunterSkill(target, 'gun');
+                    if (target.isBeauty && beautyLink) triggerBeautyDeath();
+                }
+            }
+            else if (action === '獵人日槍') {
+                log(`\n☀️ 白天: ${action} -> ${targetNum}號`, 'log-action');
+                if (confirm(`${targetNum}號 被獵人日槍帶走，確定嗎？`)) {
+                    if (target.isGhoul) log(`🔫 獵人日槍 -> 惡靈騎士 (白天處決 -> 死亡)`, 'log-kill');
+                    target.alive = false;
+                    checkHunterSkill(target, 'gun');
+                    if (target.isBeauty && beautyLink) triggerBeautyDeath();
+                }
+            }
+            else if (action === '狼王開槍') {
+                log(`\n☀️ 白天: ${action} -> ${targetNum}號`, 'log-action');
+                if (confirm(`${targetNum}號 被狼王帶走，確定嗎？`)) {
+                    if (target.isGhoul) log(`🔫 狼王開槍 -> 惡靈騎士 (白天處決 -> 死亡)`, 'log-kill');
+                    target.alive = false;
+                    checkHunterSkill(target, 'gun');
+                    if (target.isBeauty && beautyLink) triggerBeautyDeath();
+                }
+            }
+            else {
+                log(`\n☀️ 白天: ${action} -> ${targetNum}號`, 'log-action');
+
+                if (action === '決鬥') {
+                    const knight = roles.find(r => r.name === '騎士' && r.alive);
+                    if (target.type === 'wolf') {
+                        log(`⚔️ 決鬥成功！狼人 ${targetNum}號 死亡`, 'log-kill');
+                        target.alive = false;
+                        checkHunterSkill(target, 'duel'); 
+                    } else {
+                        log(`⚔️ 決鬥失敗！騎士 ${knight.number}號 死亡`, 'log-kill');
+                        knight.alive = false;
+                    }
+                } 
+                else if (action === '放逐') {
+                    if (target.isIdiot) {
+                        log(`🃏 ${targetNum}號白癡被放逐 -> 翻牌 (免疫淘汰)`, 'log-idiot');
+                        alert(`🤡 ${targetNum}號是白癡！\n請翻牌亮身分，但他不會出局。`);
+                        document.getElementById("day-target").value = "";
+                        return; 
+                    }
+                    if (confirm(`${targetNum}號 放逐，確定出局嗎？`)) {
+                        target.alive = false;
+                        checkHunterSkill(target, 'vote');
+                        if (target.isBeauty && beautyLink) triggerBeautyDeath();
+                    }
+                }
+                else if (confirm(`${targetNum}號 ${action}，確定出局嗎？`)) {
+                    target.alive = false;
+                    let reason = 'death';
+                    if (action === '狼人自爆') reason = 'suicide';
+                    else if (action.includes('開槍')) reason = 'gun';
+                    
+                    checkHunterSkill(target, reason);
+                    if (target.isBeauty && beautyLink) triggerBeautyDeath();
+                }
+            }
+
+            document.getElementById("day-target").value = "";
+            render(); updateStats(); checkWin();
+        }
+
+        function triggerBeautyDeath() {
+             const linked = findRole(beautyLink);
+             if (linked && linked.alive) {
+                 log(`💋 狼美人殉情帶走 ${beautyLink}號`, 'log-kill');
+                 linked.alive = false;
+                 checkHunterSkill(linked, 'beauty_link');
+             }
+        }
+
+        function checkHunterSkill(role, reason) {
+            if (!role.isHunter) return; 
+            const name = role.name;
+            
+            if (reason === 'poison') log(`🚫 ${name}被毒殺 -> 無法開槍`, 'log-hunter-no');
+            else if (reason === 'beauty_link') log(`🚫 ${name}被殉情 -> 無法開槍`, 'log-hunter-no');
+            else if (reason === 'suicide') { if(name === '狼王') log(`🚫 狼王自爆 -> 無法開槍`, 'log-hunter-no'); }
+            
+            else {
+                let gunType = "日槍"; 
+                if (['wolf', 'milk_kill', 'ghoul_rebound'].includes(reason)) {
+                    gunType = "夜槍";
+                    log(`🔫 ${name}出局 (${getReasonText(reason)}) -> 請詢問是否開槍 <span style="color:#f1c40f">[此為${gunType}]</span>`, 'log-hunter-yes');
+                } else {
+                    gunType = "日槍";
+                    log(`🔫 ${name}出局 (${getReasonText(reason)}) -> 請詢問是否開槍 <span style="color:#2ecc71">[此為${gunType}]</span>`, 'log-hunter-yes');
+                }
+            }
+        }
+
+        function getReasonText(code) {
+            const map = { 'wolf': '狼刀', 'milk_kill': '奶穿', 'vote': '放逐', 'duel': '決鬥', 'ghoul_rebound': '反傷', 'beauty_link': '殉情', 'gun': '開槍', 'wwk_boom': '白爆' };
+            return map[code] || '死亡';
+        }
+
+        function findRole(num) { return roles.find(r => r.number == num); }
+        function log(msg, cls) {
+            const area = document.getElementById("log-area");
+            area.innerHTML += `<div class="${cls}">${msg}</div>`;
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function resetKeepConfig() {
+            if(!confirm("確定要保留角色配置，但清空號碼與紀錄嗎？\n(將開始新的一局)")) return;
+            roles.forEach(r => {
+                r.alive = true;
+                r.number = '';
+                if(r.isGhoul) r.reboundUsed = false;
+            });
+            nightCount = 1;
+            beautyLink = null;
+            pendingNightGun = false;
+            lastWolfKill = null;
+            lastGuardTarget = null;
+            witchSaveUsed = false;
+            witchPoisonUsed = false;
+            historyStack = [];
+
+            document.getElementById("log-area").innerHTML = '<span style="color:#7f8c8d;">等待遊戲開始...</span>';
+            document.querySelectorAll('input').forEach(i => {
+                if(i.type === 'number' || i.type === 'text') i.value = '';
+                if(i.type === 'checkbox') i.checked = false;
+                i.classList.remove('input-error');
+            });
+            document.getElementById("seer-res-text").innerText = "";
+            updateWitchUI();
+            document.getElementById("win-banner").style.display = "none";
+            render();
+            updateStats();
+        }
+    </script>
+</body>
+</html>
